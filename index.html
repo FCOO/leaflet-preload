@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Quick Start - Leaflet</title>
+
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+        integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+        integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    <script src="./leaflet-preload.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .leaflet-container {
+            height: 1000px;
+            width: 1200px;
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+
+
+</head>
+
+<body>
+    <p>
+    <div id="ost">Zoom: 3</div>
+    <button onclick="zoomin()">IN</button>
+    <button onclick="zoomout()">OUT</button>
+    </p>
+    <p>
+        <label for="minzoom">Min zoom for preload</label>
+        <input type="number" id="minzoom" name="minzoom" min="1" max="5" value="2">
+        <label for="maxzoom">Max zoom for preload</label>
+        <input type="number" id="maxzoom" name="maxzoom" min="3" max="10" value="5">
+        <button onclick="preload()">PRELOAD</button>
+    </p>
+    <div id="map" style="width: 1200px; height: 1000px;"></div>
+
+    <script>
+        const map = L.map('map', { crs: L.CRS.EPSG3857 }).setView([56.0, 7.0], 3);
+        var now = new Date();
+        var then = new Date(now.getFullYear(), now.getMonth(), now.getDay(), now.getHours());
+
+        var url = 'https://{s}.fcoo.dk/webmap/v2/data/FCOO/WW3/ww3.nsbalt_nested.nc.wms?service=WMS&request=GetMap&version=1.3.0'
+            + '&layers=u_v_nsbalt,u_v_dkinner&styles=plot_method=contourf;legend=Hs_m_GBP_12colors_denmark,plot_method=contourf;legend=Hs_m_GBP_12colors_denmark'
+            + '&format=image/png&transparent=TRUE&cmap=Hs_m_GBP_12colors_denmark&crs=EPSG:3857&width=512&height=512&time=' + then.toISOString();
+        //'https://wms04.fcoo.dk/mapproxy/service?service=WMS&request=GetMap&layers=background-iho_latest&styles=&format=image%2Fpng&transparent=true&version=1.1.1&width=512&height=512&srs=EPSG%3A3857',
+        var tiles = L.tileLayer.wms(
+            url,
+
+            {
+                maxZoom: 16,
+                subdomains: ['wms01', 'wms02', 'wms03'],
+                // crs: L.CRS.EPSG3857,
+                tileSize: 512,
+
+            }).addTo(map);
+
+        map.on('preloadfinished', event => alert("Preload finished: " + event.total + " errors: " + event.rejected.length));
+
+        function zoomin() {
+            map.setZoom(map.getZoom() + 1);
+            document.getElementById("ost").innerHTML = "Zoom: " + (map.getZoom() + 1) + " " + map.getCenter();
+        }
+
+        function zoomout() {
+            map.setZoom(map.getZoom() - 1);
+            document.getElementById("ost").innerHTML = "Zoom: " + (map.getZoom() - 1) + " " + map.getCenter();
+        }
+
+        function preload() {
+            var minzoom = parseInt(document.getElementById("minzoom").value);
+            var maxzoom = parseInt(document.getElementById("maxzoom").value);
+            var numTiles = map.getNumTilesForPreload(minzoom, maxzoom);
+            if (numTiles > 500) {
+                alert("Too many tiles: " + numTiles);
+                return;
+            }
+            console.log("Starting preload");
+            map.preloadLayers(minzoom, maxzoom);
+        }
+    </script>
+
+
+
+</body>
+
+</html>
