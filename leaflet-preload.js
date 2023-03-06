@@ -3,13 +3,10 @@ L.TileLayer.include({
     canPreload: true,
 
     getTileUrls: function (bounds, map, zoom) {
-        var ts = this.getTileSize().x;
-        var min = map.project(bounds.getNorthWest(), zoom).divideBy(ts).floor(),
-            max = map.project(bounds.getSouthEast(), zoom).divideBy(ts).floor(),
-            urls = [];
-
-        for (let i = min.x; i <= max.x; i++) {
-            for (let j = min.y; j <= max.y; j++) {
+        var urls = [];
+        var tBounds = this.getTileBounds(bounds, map, zoom);
+        for (let i = tBounds.min.x; i <= tBounds.max.x; i++) {
+            for (let j = tBounds.min.y; j <= tBounds.max.y; j++) {
                 let coords = new L.Point(i, j);
                 coords.z = zoom;
                 urls.push(this.getTileUrl(coords));
@@ -19,13 +16,22 @@ L.TileLayer.include({
         return urls;
     },
 
+    getTileBounds: function (bounds, map, zoom) {
+        var ts = this.getTileSize().x;
+        var min = map.project(bounds.getNorthWest(), zoom).divideBy(ts).floor(),
+            max = map.project(bounds.getSouthEast(), zoom).divideBy(ts).floor();
+        return {
+            min: min,
+            max: max
+        }
+    },
+
     getNumTilesForPreload: function (bounds, map, minZoom, maxZoom) {
         var numTiles = 0;
         var ts = this.getTileSize().x;
         for (let z = minZoom; z <= maxZoom; z++) {
-            let min = map.project(bounds.getNorthWest(), z).divideBy(ts).floor(),
-                max = map.project(bounds.getSouthEast(), z).divideBy(ts).floor();
-            numTiles += (max.x - min.x + 1) * (max.y - min.y + 1);
+            let tBounds = this.getTileBounds(bounds, map, z);
+            numTiles += (tBounds.max.x - tBounds.min.x + 1) * (tBounds.max.y - tBounds.min.y + 1);
         }
         return numTiles;
     },
