@@ -18,12 +18,10 @@ L.TileLayer.include({
 
     getTileBounds: function (bounds, map, zoom) {
         var ts = this.getTileSize().x;
-        var min = map.project(bounds.getNorthWest(), zoom).divideBy(ts).floor(),
-            max = map.project(bounds.getSouthEast(), zoom).divideBy(ts).floor();
         return {
-            min: min,
-            max: max
-        }
+            min: map.project(bounds.getNorthWest(), zoom).divideBy(ts).floor(),
+            max: map.project(bounds.getSouthEast(), zoom).divideBy(ts).floor()
+        };
     },
 
     getNumTilesForPreload: function (bounds, map, minZoom, maxZoom) {
