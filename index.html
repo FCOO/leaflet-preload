@@ -12,8 +12,14 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
         integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw-src.css"
+        integrity="sha512-vJfMKRRm4c4UupyPwGUZI8U651mSzbmmPgR3sdE3LcwBPsdGeARvUM5EcSTg34DK8YIRiIo+oJwNfZPMKEQyug=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
         integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"
+        integrity="sha512-ozq8xQKq6urvuU6jNgkfqAmT7jKN2XumbrX1JiB3TnF7tI48DPI4Gy1GXKD/V3EExgAs1V+pRO7vwtS1LHg0Gw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="./leaflet-preload.js"></script>
     <style>
         html,
@@ -40,7 +46,7 @@
     <input type="number" id="minzoom" name="minzoom" min="1" max="5" value="2">
     <label for="maxzoom">Max zoom for preload</label>
     <input type="number" id="maxzoom" name="maxzoom" min="3" max="10" value="5">
-    <button onclick="preload()">PRELOAD</button>
+    <button id="preloadbtn" onclick="preload()" disabled>PRELOAD</button>
     </p>
     <div id="map" style="width: 1200px; height: 1000px;"></div>
 
@@ -70,6 +76,57 @@
         map.on('preload:tilesuccess', imgPreloadHandler);
         map.on('preload:tiledfailed', imgPreloadHandler);
 
+        var selectedRectangele = null;
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        var drawControlFull = new L.Control.Draw({
+            draw: {
+                polyline: false,
+                polygon: false,
+                marker: false,
+                circle: false,
+                circlemarker: false,
+                rectangle: true
+
+            },
+            edit: {
+                featureGroup: drawnItems
+            }
+        });
+        var drawControlEditOnly = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems
+            },
+            draw: false
+        });
+        map.addControl(drawControlFull);
+
+        map.on(L.Draw.Event.CREATED, function (e) {
+            var type = e.layerType,
+                layer = e.layer;
+
+            if (type === 'rectangle') {
+
+                let latLngs = layer.getLatLngs();
+                selectedRectangele = L.latLngBounds(latLngs[0], latLngs[2]);
+                document.getElementById("preloadbtn").disabled = false;
+
+            }
+            drawnItems.addLayer(e.layer);
+            drawControlFull.remove(map);
+            drawControlEditOnly.addTo(map)
+        });
+
+        map.on(L.Draw.Event.DELETED, function (e) {
+            if (drawnItems.getLayers().length === 0) {
+                drawControlEditOnly.remove(map);
+                drawControlFull.addTo(map);
+                selectedRectangele = null;
+                document.getElementById("preloadbtn").disabled = true;
+            };
+        });
+
         var finished = 0;
         var numTiles = 0;
 
@@ -85,14 +142,14 @@
         function preload() {
             var minzoom = parseInt(document.getElementById("minzoom").value);
             var maxzoom = parseInt(document.getElementById("maxzoom").value);
-            numTiles = map.getNumTilesForPreload(minzoom, maxzoom);
+            numTiles = map.getNumTilesForPreload(minzoom, maxzoom, selectedRectangele);
             if (numTiles > 500) {
                 alert("Too many tiles: " + numTiles);
                 return;
             }
             console.log("Starting preload");
             finished = 0
-            map.preloadLayers(minzoom, maxzoom);
+            map.preloadLayers(minzoom, maxzoom, selectedRectangele);
         }
     </script>
 

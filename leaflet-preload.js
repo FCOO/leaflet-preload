@@ -20,9 +20,12 @@ L.TileLayer.include({
     },
 
     getNumTilesForPreload: function (bounds, map, minZoom, maxZoom) {
-        let numTiles = 0;
+        var numTiles = 0;
+        var ts = this.getTileSize().x;
         for (let z = minZoom; z <= maxZoom; z++) {
-            numTiles += this.getTileUrls(bounds, map, z).length;
+            let min = map.project(bounds.getNorthWest(), z).divideBy(ts).floor(),
+                max = map.project(bounds.getSouthEast(), z).divideBy(ts).floor();
+            numTiles += (max.x - min.x + 1) * (max.y - min.y + 1);
         }
         return numTiles;
     },
