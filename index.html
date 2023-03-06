@@ -76,7 +76,6 @@
         map.on('preload:tilesuccess', imgPreloadHandler);
         map.on('preload:tiledfailed', imgPreloadHandler);
 
-        var selectedRectangele = null;
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
@@ -105,14 +104,7 @@
         map.on(L.Draw.Event.CREATED, function (e) {
             var type = e.layerType,
                 layer = e.layer;
-
-            if (type === 'rectangle') {
-
-                let latLngs = layer.getLatLngs();
-                selectedRectangele = L.latLngBounds(latLngs[0], latLngs[2]);
-                document.getElementById("preloadbtn").disabled = false;
-
-            }
+            document.getElementById("preloadbtn").disabled = false;
             drawnItems.addLayer(e.layer);
             drawControlFull.remove(map);
             drawControlEditOnly.addTo(map)
@@ -122,7 +114,6 @@
             if (drawnItems.getLayers().length === 0) {
                 drawControlEditOnly.remove(map);
                 drawControlFull.addTo(map);
-                selectedRectangele = null;
                 document.getElementById("preloadbtn").disabled = true;
             };
         });
@@ -142,14 +133,18 @@
         function preload() {
             var minzoom = parseInt(document.getElementById("minzoom").value);
             var maxzoom = parseInt(document.getElementById("maxzoom").value);
+            var latLngs = drawnItems.getLayers()[0].getLatLngs();
+            let selectedRectangele = L.latLngBounds(latLngs[0], latLngs[2]);
+            finished = 0
             numTiles = map.getNumTilesForPreload(minzoom, maxzoom, selectedRectangele);
+            updateProgress();
             if (numTiles > 500) {
                 alert("Too many tiles: " + numTiles);
                 return;
             }
             console.log("Starting preload");
-            finished = 0
             map.preloadLayers(minzoom, maxzoom, selectedRectangele);
+
         }
     </script>
 
