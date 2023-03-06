@@ -44,8 +44,8 @@ L.Map.include({
     _preloadImg: function (img, url) {
         return new Promise((resolve, reject) => {
             img.src = url;
-            img.onload = () => resolve(img);
-            img.onerror = () => reject(img);
+            img.onload = () => { this.fire('preload:tilesuccess'); resolve(img) };
+            img.onerror = () => { this.fire('preload:tilefailed'); reject(img); }
         });
     },
 
@@ -58,7 +58,7 @@ L.Map.include({
                 badUrls.push(res.reason.src);
             }
         })
-        this.fire('preloadfinished',
+        this.fire('preload:finished',
             {
                 total: results.length,
                 rejected: badUrls
