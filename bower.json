@@ -1,0 +1,36 @@
+{
+    "name": "leaflet-preload",
+    "version": "0.0.0",
+    "homepage": "https://github.com/FCOO/leaflet-preload",
+    "authors": [
+        "Simon Lyngby Kokkendorff"
+    ],
+    "description": "",
+    "main": [
+        "dist/leaflet-preload.js"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/FCOO/leaflet-preload.git"
+    },
+    "dependencies": {
+        "leaflet": "latest",
+        "jquery": "latest"
+    },
+    "devDependencies": {
+        "bourbon": "latest",
+        "modernizr-mixin": "latest",
+        "mathsass": "latest"
+    },
+    "license": "MIT",
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "test",
+        "tests"
+    ],
+    "moduleType": [
+        "es6"
+    ]
+}
