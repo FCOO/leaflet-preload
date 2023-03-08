@@ -35,6 +35,7 @@
     <label for="maxzoom">Max zoom for preload</label>
     <input type="number" id="maxzoom" name="maxzoom" min="3" max="10" value="5">
     <button id="preloadbtn" onclick="preload()" disabled>PRELOAD</button>
+    <button id="cancelbtn" onclick="cancelPreload()">CANCEL</button>
     </p>
     <div id="map" style="width: 1200px; height: 1000px;"></div>
 
@@ -60,7 +61,7 @@
                 styles: 'plot_method=contourf;legend=Hs_m_GBP_12colors_denmark,plot_method=contourf;legend=Hs_m_GBP_12colors_denmark',
             }).addTo(map);
 
-        map.on('preload:finished', event => console.log("Preload finished: " + event.total + " errors: " + event.rejected.length));
+        map.on('preload:finished', event => console.log("Preload finished, success: " + event.success + " errors: " + event.failed));
         map.on('preload:tilesuccess', imgPreloadHandler);
         map.on('preload:tiledfailed', imgPreloadHandler);
 
@@ -108,6 +109,7 @@
 
         var finished = 0;
         var numTiles = 0;
+        var controlObjects = null;
 
         function updateProgress() {
             document.getElementById("preloadstatus").innerHTML = "Images: " + finished + "/" + numTiles;
@@ -118,20 +120,28 @@
             updateProgress();
         }
 
+        function cancelPreload() {
+            if (controlObjects != null) {
+                map.cancelPreload(controlObjects);
+            }
+        }
+
         function preload() {
             var minzoom = parseInt(document.getElementById("minzoom").value);
             var maxzoom = parseInt(document.getElementById("maxzoom").value);
             var latLngs = drawnItems.getLayers()[0].getLatLngs();
             let selectedRectangele = L.latLngBounds(latLngs[0], latLngs[2]);
             finished = 0
-            numTiles = map.getNumTilesForPreload(minzoom, maxzoom, selectedRectangele);
+            var summary = map.preparePreload(minzoom, maxzoom, selectedRectangele);
+            numTiles = summary.numTiles;
+            controlObjects = summary.controlObjects;
             updateProgress();
             if (numTiles > 500) {
                 alert("Too many tiles: " + numTiles);
                 return;
             }
             console.log("Starting preload");
-            map.preloadLayers(minzoom, maxzoom, selectedRectangele);
+            map.preloadLayers(controlObjects);
 
         }
     </script>
