@@ -56,6 +56,7 @@
 		},
 
 		preparePreload: function (bounds, map, minZoom, maxZoom) {
+			/* Return controlObject for preload method */
 			return {
 				cancelled: false,
 				status: null,
@@ -80,6 +81,10 @@
 
 
 		preload: async function (controlObject, chunkSize = 32, sleep = 0) {
+			/* Preload with parameters specified in controlObject 
+			* chunkSize: How many images to start loading simultaneously
+			* sleep: Sleep this many millis between starting new downloads
+			*/
 			var urls = [];
 			controlObject.status = 'running';
 			for (let z = controlObject.minZoom; z <= controlObject.maxZoom; z++) {
@@ -144,12 +149,14 @@
 	L.Map.include({
 
 		cancelPreload: function (controlObjects) {
+			/* Cancel preload controlled by controlObjects */
 			for (let cObj of controlObjects) {
 				cObj.cancel();
 			}
 		},
 
 		preparePreload: function (minZoom, maxZoom, bounds = null, layers = null) {
+			/* Wrapper of L.TileLayer.preparePreload */
 			var numTiles = 0, controlObjects = [];
 			if (bounds == null) {
 				bounds = this.getBounds();
@@ -169,6 +176,7 @@
 		},
 
 		preloadLayers: async function (controlObjects, chunkSize = 32, sleep = 0) {
+			/* Wrapper of L.TileLayer.preload */
 			var success = 0, failed = 0;
 			for (let cObj of controlObjects) {
 				let res = await cObj.preload(chunkSize, sleep);
