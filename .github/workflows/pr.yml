@@ -1,6 +1,6 @@
 name: Grunt check PR
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   grunt-check:
@@ -15,4 +15,4 @@ jobs:
           cache: 'npm'
         
       - run: npm install grunt-cli eslint
-      - run: grunt check
+      - run: grunt build

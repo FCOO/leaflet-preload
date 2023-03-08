@@ -45,8 +45,7 @@
 			var south = Math.max(bounds1.getSouth(), bounds2.getSouth());
 			return new L.LatLngBounds([south, west], [north, east]);
 		},
-		dsjkjsd 
-		
+
 		getTileUrls: function (bounds, map, zoom) {
 			var urls = [];
 			var tBounds = this.getTileBounds(bounds, map, zoom);
