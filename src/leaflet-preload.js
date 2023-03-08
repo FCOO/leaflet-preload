@@ -34,9 +34,24 @@
 			return promises;
 		},
 
+		_intersectLatLngBounds: function (bounds1, bounds2) {
+			/* intersect with other LatLngBounds */
+			if (!bounds1.intersects(bounds2)) {
+				return null;
+			}
+			var west = Math.max(bounds1.getWest(), bounds2.getWest());
+			var east = Math.min(bounds1.getEast(), bounds2.getEast());
+			var north = Math.min(bounds1.getNorth(), bounds2.getNorth());
+			var south = Math.max(bounds1.getSouth(), bounds2.getSouth());
+			return new L.LatLngBounds([south, west], [north, east]);
+		},
+
 		getTileUrls: function (bounds, map, zoom) {
 			var urls = [];
 			var tBounds = this.getTileBounds(bounds, map, zoom);
+			if (tBounds == null) {
+				return urls;
+			}
 			for (let i = tBounds.min.x; i <= tBounds.max.x; i++) {
 				for (let j = tBounds.min.y; j <= tBounds.max.y; j++) {
 					let coords = new L.Point(i, j);
@@ -49,10 +64,29 @@
 
 		getTileBounds: function (bounds, map, zoom) {
 			var ts = this.getTileSize().x;
+			// Check if bounds are set on layer:
+			if (this.options.bounds) {
+				if (!this.options.bounds.intersects(bounds)) {
+					return null;
+				}
+				bounds = this._intersectLatLngBounds(bounds, this.options.bounds);
+			}
 			return {
 				min: map.project(bounds.getNorthWest(), zoom).divideBy(ts).floor(),
 				max: map.project(bounds.getSouthEast(), zoom).divideBy(ts).floor()
 			};
+		},
+
+		getNumTilesForPreload: function (bounds, map, minZoom, maxZoom) {
+			var numTiles = 0;
+			for (let z = minZoom; z <= maxZoom; z++) {
+				let tBounds = this.getTileBounds(bounds, map, z);
+				if (tBounds == null) {
+					return 0;
+				}
+				numTiles += (tBounds.max.x - tBounds.min.x + 1) * (tBounds.max.y - tBounds.min.y + 1);
+			}
+			return numTiles;
 		},
 
 		preparePreload: function (bounds, map, minZoom, maxZoom) {
@@ -133,15 +167,6 @@
 			controlObject.failed = nFailed;
 			return controlObject;
 		},
-
-		getNumTilesForPreload: function (bounds, map, minZoom, maxZoom) {
-			var numTiles = 0;
-			for (let z = minZoom; z <= maxZoom; z++) {
-				let tBounds = this.getTileBounds(bounds, map, z);
-				numTiles += (tBounds.max.x - tBounds.min.x + 1) * (tBounds.max.y - tBounds.min.y + 1);
-			}
-			return numTiles;
-		}
 
 	});
 
