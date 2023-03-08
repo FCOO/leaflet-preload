@@ -49,7 +49,7 @@
 		getTileUrls: function (bounds, map, zoom) {
 			var urls = [];
 			var tBounds = this.getTileBounds(bounds, map, zoom);
-			if (tBounds == null) {
+			if (!tBounds) {
 				return urls;
 			}
 			for (let i = tBounds.min.x; i <= tBounds.max.x; i++) {
@@ -81,10 +81,10 @@
 			var numTiles = 0;
 			for (let z = minZoom; z <= maxZoom; z++) {
 				let tBounds = this.getTileBounds(bounds, map, z);
-				if (tBounds == null) {
-					return 0;
+				if (tBounds) {
+					numTiles += (tBounds.max.x - tBounds.min.x + 1) * (tBounds.max.y - tBounds.min.y + 1);
 				}
-				numTiles += (tBounds.max.x - tBounds.min.x + 1) * (tBounds.max.y - tBounds.min.y + 1);
+
 			}
 			return numTiles;
 		},
