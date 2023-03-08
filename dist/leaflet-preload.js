@@ -14,9 +14,44 @@
 	L.TileLayer.include({
 		canPreload: true,
 
+		_preloadImg: function (map, img, url) {
+			return new Promise((resolve, reject) => {
+				img.src = url;
+				img.onload = () => { map.fire('preload:tilesuccess'); resolve(img); };
+				img.onerror = () => { map.fire('preload:tilefailed'); reject(img); };
+			});
+		},
+
+		preloadImages: function (map, urls) {
+			/* Should probably be a util function in L.Utils */
+			let promises = [];
+			urls.forEach(
+				url => {
+					var img = new Image();
+					promises.push(this._preloadImg(map, img, url));
+				}
+			);
+			return promises;
+		},
+
+		_intersectLatLngBounds: function (bounds1, bounds2) {
+			/* intersect with other LatLngBounds */
+			if (!bounds1.intersects(bounds2)) {
+				return null;
+			}
+			var west = Math.max(bounds1.getWest(), bounds2.getWest());
+			var east = Math.min(bounds1.getEast(), bounds2.getEast());
+			var north = Math.min(bounds1.getNorth(), bounds2.getNorth());
+			var south = Math.max(bounds1.getSouth(), bounds2.getSouth());
+			return new L.LatLngBounds([south, west], [north, east]);
+		},
+
 		getTileUrls: function (bounds, map, zoom) {
 			var urls = [];
 			var tBounds = this.getTileBounds(bounds, map, zoom);
+			if (!tBounds) {
+				return urls;
+			}
 			for (let i = tBounds.min.x; i <= tBounds.max.x; i++) {
 				for (let j = tBounds.min.y; j <= tBounds.max.y; j++) {
 					let coords = new L.Point(i, j);
@@ -24,12 +59,18 @@
 					urls.push(this.getTileUrl(coords));
 				}
 			}
-
 			return urls;
 		},
 
 		getTileBounds: function (bounds, map, zoom) {
 			var ts = this.getTileSize().x;
+			// Check if bounds are set on layer:
+			if (this.options.bounds) {
+				if (!this.options.bounds.intersects(bounds)) {
+					return null;
+				}
+				bounds = this._intersectLatLngBounds(bounds, this.options.bounds);
+			}
 			return {
 				min: map.project(bounds.getNorthWest(), zoom).divideBy(ts).floor(),
 				max: map.project(bounds.getSouthEast(), zoom).divideBy(ts).floor()
@@ -40,65 +81,101 @@
 			var numTiles = 0;
 			for (let z = minZoom; z <= maxZoom; z++) {
 				let tBounds = this.getTileBounds(bounds, map, z);
-				numTiles += (tBounds.max.x - tBounds.min.x + 1) * (tBounds.max.y - tBounds.min.y + 1);
+				if (tBounds) {
+					numTiles += (tBounds.max.x - tBounds.min.x + 1) * (tBounds.max.y - tBounds.min.y + 1);
+				}
+
 			}
 			return numTiles;
 		},
 
-		preload: function (bounds, map, minZoom, maxZoom) {
+		preparePreload: function (bounds, map, minZoom, maxZoom) {
+			/* Return controlObject for preload method */
+			return {
+				cancelled: false,
+				status: null,
+				layer: this,
+				map: map,
+				bounds: bounds,
+				minZoom: minZoom,
+				maxZoom: maxZoom,
+				numTiles: this.getNumTilesForPreload(bounds, map, minZoom, maxZoom),
+				success: 0,
+				failed: 0,
+				cancel: function () {
+					this.cancelled = true;
+					this.status = 'cancelled';
+				},
+
+				preload: function (chunkSize = 32, sleep = 0) {
+					return this.layer.preload(this, chunkSize, sleep);
+				}
+			};
+		},
+
+
+		preload: async function (controlObject, chunkSize = 32, sleep = 0) {
+			/* Preload with parameters specified in controlObject 
+			* chunkSize: How many images to start loading simultaneously
+			* sleep: Sleep this many millis between starting new downloads
+			*/
 			var urls = [];
-			for (let z = minZoom; z <= maxZoom; z++) {
-				let _urls = this.getTileUrls(bounds, map, z);
+			controlObject.status = 'running';
+			for (let z = controlObject.minZoom; z <= controlObject.maxZoom; z++) {
+				let _urls = this.getTileUrls(controlObject.bounds, controlObject.map, z);
+				urls.push(..._urls);
 				// eslint-disable-next-line no-console
 				console.log("Zoom ", z, " urls ", _urls.length);
-				urls.push(..._urls);
 			}
-			return map.preloadImages(urls);
-		}
+			var start = 0, stop = chunkSize, nSuccess = 0, nFailed = 0;
+
+			while (start < urls.length && (!controlObject.cancelled)) {
+				let badUrls = [];
+				if (sleep) {
+					await new Promise(r => setTimeout(r, sleep));
+				}
+				let promises = [];
+				for (let url of urls.slice(start, stop)) {
+					if (!controlObject.cancelled) {
+						var img = new Image();
+						promises.push(this._preloadImg(controlObject.map, img, url));
+					}
+				}
+				if (controlObject.cancelled) {
+					break;
+				}
+				// TODO: Special handling if cancelled?
+				let results = await Promise.allSettled(promises);
+				results.forEach(res => {
+					if (res.status == 'rejected') {
+						nFailed += 1;
+						badUrls.push(res.reason.src);
+					} else {
+						nSuccess += 1;
+					}
+				});
+				start += chunkSize;
+				stop += chunkSize;
+			}
+			if (controlObject.cancelled) {
+				// eslint-disable-next-line no-console
+				console.log("Preload cancelled at ", start, stop);
+			}
+			// TODO: Perhaps retry bad urls?
+			if (!controlObject.cancelled) { controlObject.status = 'finished'; }
+			controlObject.success = nSuccess;
+			controlObject.failed = nFailed;
+			return controlObject;
+		},
+
 	});
 
 
 	L.Map.include({
 
-		_preloadImg: function (img, url) {
-			return new Promise((resolve, reject) => {
-				img.src = url;
-				img.onload = () => { this.fire('preload:tilesuccess'); resolve(img); };
-				img.onerror = () => { this.fire('preload:tilefailed'); reject(img); };
-			});
-		},
-
-		_finishPreload: function (results) {
-			// eslint-disable-next-line no-console
-			console.log("Done preloading");
-			let badUrls = [];
-			results.forEach(res => {
-				if (res.status == 'rejected') {
-					badUrls.push(res.reason.src);
-				}
-			});
-			this.fire('preload:finished',
-				{
-					total: results.length,
-					rejected: badUrls
-				}
-			);
-		},
-
-		preloadImages: function (urls) {
-			/* Should probably be a util function in L.Utils */
-			let promises = [];
-			urls.forEach(
-				url => {
-					var img = new Image();
-					promises.push(this._preloadImg(img, url));
-				}
-			);
-			return promises;
-		},
-
-		getNumTilesForPreload: function (minZoom, maxZoom, bounds = null, layers = null) {
-			let numTiles = 0;
+		preparePreload: function (minZoom, maxZoom, bounds = null, layers = null) {
+			/* Wrapper of L.TileLayer.preparePreload */
+			var numTiles = 0, controlObjects = [];
 			if (bounds == null) {
 				bounds = this.getBounds();
 			}
@@ -106,30 +183,37 @@
 				layers = [];
 				this.eachLayer(lyr => layers.push(lyr));
 			}
-			layers.forEach(lyr => {
+			for (let lyr of layers) {
 				if (lyr.canPreload) {
-					numTiles += lyr.getNumTilesForPreload(bounds, this, minZoom, maxZoom);
+					let cObj = lyr.preparePreload(bounds, this, minZoom, maxZoom);
+					controlObjects.push(cObj);
+					numTiles += cObj.numTiles;
 				}
-			});
-			return numTiles;
+			}
+			return {
+				numTiles: numTiles,
+				map: this,
+				controlObjects: controlObjects,
+				preload: function (chunkSize = 32, sleep = 0) {
+					return this.map.preloadLayers(this.controlObjects, chunkSize, sleep);
+				},
+				cancel: function () {
+					for (let cObj of this.controlObjects) {
+						cObj.cancel();
+					}
+				}
+			};
 		},
 
-		preloadLayers: function (minZoom, maxZoom, bounds = null, layers = null) {
-			if (bounds == null) {
-				bounds = this.getBounds();
+		preloadLayers: async function (controlObjects, chunkSize = 32, sleep = 0) {
+			/* Wrapper of L.TileLayer.preload */
+			var success = 0, failed = 0;
+			for (let cObj of controlObjects) {
+				let res = await cObj.preload(chunkSize, sleep);
+				success += res.success;
+				failed += res.failed;
 			}
-			// let zoom = this.getZoom();
-			let promises = [];
-			if (!layers) {
-				layers = [];
-				this.eachLayer(lyr => layers.push(lyr));
-			}
-			layers.forEach(lyr => {
-				if (lyr.canPreload) {
-					promises.push(...lyr.preload(bounds, this, minZoom, maxZoom));
-				}
-			});
-			Promise.allSettled(promises).then(values => this._finishPreload(values));
+			this.fire('preload:finished', { success: success, failed: failed });
 		}
 	});
 

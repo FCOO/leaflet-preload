@@ -110,7 +110,7 @@
 
         var finished = 0;
         var numTiles = 0;
-        var controlObjects = null;
+        var preloadStatus = null;
 
         function updateProgress() {
             document.getElementById("preloadstatus").innerHTML = "Images: " + finished + "/" + numTiles;
@@ -122,8 +122,8 @@
         }
 
         function cancelPreload() {
-            if (controlObjects != null) {
-                map.cancelPreload(controlObjects);
+            if (preloadStatus) {
+                preloadStatus.cancel();
             }
         }
 
@@ -133,16 +133,16 @@
             var latLngs = drawnItems.getLayers()[0].getLatLngs();
             let selectedRectangele = L.latLngBounds(latLngs[0], latLngs[2]);
             finished = 0
-            var summary = map.preparePreload(minzoom, maxzoom, selectedRectangele);
-            numTiles = summary.numTiles;
-            controlObjects = summary.controlObjects;
+            preloadStatus = map.preparePreload(minzoom, maxzoom, selectedRectangele);
+            numTiles = preloadStatus.numTiles;
+
             updateProgress();
             if (numTiles > 500) {
                 alert("Too many tiles: " + numTiles);
                 return;
             }
             console.log("Starting preload");
-            map.preloadLayers(controlObjects);
+            preloadStatus.preload();
 
         }
     </script>

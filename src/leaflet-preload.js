@@ -173,13 +173,6 @@
 
 	L.Map.include({
 
-		cancelPreload: function (controlObjects) {
-			/* Cancel preload controlled by controlObjects */
-			for (let cObj of controlObjects) {
-				cObj.cancel();
-			}
-		},
-
 		preparePreload: function (minZoom, maxZoom, bounds = null, layers = null) {
 			/* Wrapper of L.TileLayer.preparePreload */
 			var numTiles = 0, controlObjects = [];
@@ -197,7 +190,19 @@
 					numTiles += cObj.numTiles;
 				}
 			}
-			return { numTiles: numTiles, controlObjects: controlObjects };
+			return {
+				numTiles: numTiles,
+				map: this,
+				controlObjects: controlObjects,
+				preload: function (chunkSize = 32, sleep = 0) {
+					return this.map.preloadLayers(this.controlObjects, chunkSize, sleep);
+				},
+				cancel: function () {
+					for (let cObj of this.controlObjects) {
+						cObj.cancel();
+					}
+				}
+			};
 		},
 
 		preloadLayers: async function (controlObjects, chunkSize = 32, sleep = 0) {

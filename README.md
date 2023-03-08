@@ -31,16 +31,16 @@ map.on('preload:tilefailed', anotherFunction);
 map.on('preload:finished', thirdFunction);
 var statusWrapper = map.preparePreload(4, 8);
 if (statusWrapper.numTiles < 10000) {
-    map.preloadLayers(statusWrapper.controlObjects);
+    statusWrapper.preload().then(console.log);
     /* if needed, cancel active preload(s) */
-    map.cancelPreload(statusWrapper.controlObjects);
+    statusWrapper.cancel();
 }
 
 ```
 ### Events
 * preload:tilesuccess - fired when an image (a tile) is successfully loaded.
 * preload:tilefailed  - fired when an image (a tile) is failed to load.
-* preload:finished - fired when map.preloadLayers is done (finished or cancelled).
+* preload:finished - fired when preload wrapper function (via map) is done (finished or cancelled).
 
 ### Options
 None atm
