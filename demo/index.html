@@ -29,6 +29,7 @@
 
 <body>
     <p>
+    <div id="zoomstatus">Zoom:</div>
     <div id="preloadstatus">Images: 0/0</div>
     <label for="minzoom">Min zoom for preload</label>
     <input type="number" id="minzoom" name="minzoom" min="1" max="5" value="2">
@@ -46,6 +47,10 @@
 
         var url = 'https://{s}.fcoo.dk/webmap/v2/data/FCOO/WW3/ww3.nsbalt_nested.nc.wms'
             + '?cmap=Hs_m_GBP_12colors_denmark&time=' + then.toISOString();
+        var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</a>'
+        }).addTo(map);
         var tiles = L.tileLayer.wms(
             url,
 
@@ -53,7 +58,7 @@
                 bounds: L.latLngBounds([65.79167175292969, 30.013757705688477], [48.54166793823242, -4.069439888000488]),
                 maxZoom: 16,
                 subdomains: ['wms01', 'wms02', 'wms03'],
-                // crs: L.CRS.EPSG3857,
+                crs: L.CRS.EPSG3857,
                 tileSize: 512,
                 layers: 'u_v_nsbalt,u_v_dkinner',
                 format: 'image/png',
@@ -65,6 +70,9 @@
         map.on('preload:finished', event => console.log("Preload finished, success: " + event.success + " errors: " + event.failed));
         map.on('preload:tilesuccess', imgPreloadHandler);
         map.on('preload:tiledfailed', imgPreloadHandler);
+        map.on('zoomend', function (event) {
+            document.getElementById("zoomstatus").innerHTML = "Zoom: " + map.getZoom();
+        });
 
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
@@ -142,7 +150,7 @@
                 return;
             }
             console.log("Starting preload");
-            preloadStatus.preload();
+            preloadStatus.preload(8, 30);
 
         }
     </script>

@@ -46,9 +46,13 @@
 			return new L.LatLngBounds([south, west], [north, east]);
 		},
 
-		getTileUrls: function (bounds, map, zoom) {
+		_getTileUrls: function (bounds, map, zoom) {
 			var urls = [];
 			var tBounds = this.getTileBounds(bounds, map, zoom);
+			// Emulate that we are on map
+			this._tileZoom = zoom;
+			this._resetGrid();
+
 			if (!tBounds) {
 				return urls;
 			}
@@ -91,10 +95,26 @@
 
 		preparePreload: function (bounds, map, minZoom, maxZoom) {
 			/* Return controlObject for preload method */
+			var lyr = this;
+			if (this instanceof L.TileLayer.WMS) {
+				if (this.map) {
+					lyr = L.tileLayer.WMS(this._url, this.options);
+				}
+
+				lyr._map = map;
+				lyr._crs = this.options.crs || map.options.crs;
+				lyr._wmsVersion = parseFloat(this.wmsParams.version);
+				const projectionKey = this._wmsVersion >= 1.3 ? 'crs' : 'srs';
+				lyr.wmsParams[projectionKey] = this._crs.code;
+			} else if (this._map) {
+				lyr = L.tileLayer(this._url, this.options);
+				lyr._map = map;
+			}
 			return {
 				cancelled: false,
 				status: null,
-				layer: this,
+				// Layer that isn't on map
+				layer: lyr,
 				map: map,
 				bounds: bounds,
 				minZoom: minZoom,
@@ -122,7 +142,7 @@
 			var urls = [];
 			controlObject.status = 'running';
 			for (let z = controlObject.minZoom; z <= controlObject.maxZoom; z++) {
-				let _urls = this.getTileUrls(controlObject.bounds, controlObject.map, z);
+				let _urls = this._getTileUrls(controlObject.bounds, controlObject.map, z);
 				urls.push(..._urls);
 				// eslint-disable-next-line no-console
 				console.log("Zoom ", z, " urls ", _urls.length);
