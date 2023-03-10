@@ -12,7 +12,6 @@
 
 	/* Add preload methods to existing Leaflet classes */
 	L.TileLayer.include({
-		canPreload: true,
 
 		_preloadImg: function (map, img, url) {
 			return new Promise((resolve, reject) => {
@@ -93,12 +92,21 @@
 			return numTiles;
 		},
 
-		preparePreload: function (bounds, map, minZoom, maxZoom) {
+		preparePreload: function (bounds, map, minZoom, maxZoom, newWMSParams = null) {
 			/* Return controlObject for preload method */
 			var lyr = this;
+			/* 
+			See if layer is on map and create shadow layer if needed.
+			-
+			If you have a custom subclass which e.g. overrides getTileUrl, create a clone yourself
+			Which is NOT on map before calling this. 
+			If subclass does not override getTileUrl, this shouldn't be needed.
+			*/
 			if (this instanceof L.TileLayer.WMS) {
-				if (this.map) {
-					lyr = L.tileLayer.WMS(this._url, this.options);
+				if (this._map) {
+					// Layer is on map - construct a shadow
+					// Perhaps not really needed for WMS class
+					lyr = L.tileLayer.wms(this._url, this.options);
 				}
 
 				lyr._map = map;
@@ -106,7 +114,11 @@
 				lyr._wmsVersion = parseFloat(this.wmsParams.version);
 				const projectionKey = this._wmsVersion >= 1.3 ? 'crs' : 'srs';
 				lyr.wmsParams[projectionKey] = this._crs.code;
+				if (newWMSParams) {
+					lyr.setParams(newWMSParams, true);
+				}
 			} else if (this._map) {
+				// Layer is on map - create shadow
 				lyr = L.tileLayer(this._url, this.options);
 				lyr._map = map;
 			}
@@ -128,13 +140,13 @@
 				},
 
 				preload: function (chunkSize = 32, sleep = 0) {
-					return this.layer.preload(this, chunkSize, sleep);
+					return this.layer._preload(this, chunkSize, sleep);
 				}
 			};
 		},
 
 
-		preload: async function (controlObject, chunkSize = 32, sleep = 0) {
+		_preload: async function (controlObject, chunkSize = 32, sleep = 0) {
 			/* Preload with parameters specified in controlObject 
 			* chunkSize: How many images to start loading simultaneously
 			* sleep: Sleep this many millis between starting new downloads
@@ -204,7 +216,7 @@
 				this.eachLayer(lyr => layers.push(lyr));
 			}
 			for (let lyr of layers) {
-				if (lyr.canPreload) {
+				if (lyr instanceof L.TileLayer) {
 					let cObj = lyr.preparePreload(bounds, this, minZoom, maxZoom);
 					controlObjects.push(cObj);
 					numTiles += cObj.numTiles;
