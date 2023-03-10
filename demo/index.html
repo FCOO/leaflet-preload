@@ -29,14 +29,17 @@
 
 <body>
     <p>
-    <div id="zoomstatus">Zoom:</div>
+    <div id="zoomstatus"></div>
     <div id="preloadstatus">Images: 0/0</div>
     <label for="minzoom">Min zoom for preload</label>
     <input type="number" id="minzoom" name="minzoom" min="1" max="5" value="2">
     <label for="maxzoom">Max zoom for preload</label>
     <input type="number" id="maxzoom" name="maxzoom" min="3" max="10" value="5">
     <button id="preloadbtn" onclick="preload()" disabled>PRELOAD</button>
+    <button id="preloadbtnNext" onclick="preloadNextHour()" disabled>PRELOAD +1 HOUR</button>
     <button id="cancelbtn" onclick="cancelPreload()">CANCEL</button>
+    <button onclick="forwards()">+HOUR</button>
+    <button onclick="backwards()">-HOUR</button>
     </p>
     <div id="map" style="width: 1200px; height: 1000px;"></div>
 
@@ -69,9 +72,25 @@
         map.on('preload:finished', event => console.log("Preload finished, success: " + event.success + " errors: " + event.failed));
         map.on('preload:tilesuccess', imgPreloadHandler);
         map.on('preload:tiledfailed', imgPreloadHandler);
-        map.on('zoomend', function (event) {
-            document.getElementById("zoomstatus").innerHTML = "Zoom: " + map.getZoom();
-        });
+        map.on('zoomend', setZoomTimeStatus);
+
+        function setZoomTimeStatus(event) {
+            document.getElementById("zoomstatus").innerHTML = "Zoom: " + map.getZoom() + ", Time: " + then.toISOString();
+        }
+
+        function forwards() {
+            then.setHours(then.getHours() + 1);
+            setZoomTimeStatus();
+            tiles.setParams({ time: then.toISOString() });
+
+        }
+
+        function backwards() {
+            then.setHours(then.getHours() - 1);
+            setZoomTimeStatus();
+            tiles.setParams({ time: then.toISOString() });
+
+        }
 
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
@@ -102,6 +121,7 @@
             var type = e.layerType,
                 layer = e.layer;
             document.getElementById("preloadbtn").disabled = false;
+            document.getElementById("preloadbtnNext").disabled = false;
             drawnItems.addLayer(e.layer);
             drawControlFull.remove(map);
             drawControlEditOnly.addTo(map)
@@ -112,6 +132,7 @@
                 drawControlEditOnly.remove(map);
                 drawControlFull.addTo(map);
                 document.getElementById("preloadbtn").disabled = true;
+                document.getElementById("preloadbtnNext").disabled = true;
             };
         });
 
@@ -152,6 +173,30 @@
             preloadStatus.preload(8, 30);
 
         }
+
+
+        function preloadNextHour() {
+            var minzoom = parseInt(document.getElementById("minzoom").value);
+            var maxzoom = parseInt(document.getElementById("maxzoom").value);
+            var latLngs = drawnItems.getLayers()[0].getLatLngs();
+            let selectedRectangele = L.latLngBounds(latLngs[0], latLngs[2]);
+            var nextTime = new Date(then);
+            nextTime.setHours(nextTime.getHours() + 1);
+            finished = 0
+
+            preloadStatus = tiles.preparePreload(selectedRectangele, map, minzoom, maxzoom, { time: nextTime.toISOString() });
+            numTiles = preloadStatus.numTiles;
+
+            updateProgress();
+            if (numTiles > 500) {
+                alert("Too many tiles: " + numTiles);
+                return;
+            }
+            console.log("Starting preload");
+            preloadStatus.preload(8, 30);
+
+        }
+        setZoomTimeStatus();
     </script>
 
 </body>

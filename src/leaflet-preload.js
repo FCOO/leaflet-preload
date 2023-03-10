@@ -92,12 +92,21 @@
 			return numTiles;
 		},
 
-		preparePreload: function (bounds, map, minZoom, maxZoom) {
+		preparePreload: function (bounds, map, minZoom, maxZoom, newWMSParams = null) {
 			/* Return controlObject for preload method */
 			var lyr = this;
+			/* 
+			See if layer is on map and create shadow layer if needed.
+			-
+			If you have a custom subclass which e.g. overrides getTileUrl, create a clone yourself
+			Which is NOT on map before calling this. 
+			If subclass does not override getTileUrl, this shouldn't be needed.
+			*/
 			if (this instanceof L.TileLayer.WMS) {
-				if (this.map) {
-					lyr = L.tileLayer.WMS(this._url, this.options);
+				if (this._map) {
+					// Layer is on map - construct a shadow
+					// Perhaps not really needed for WMS class
+					lyr = L.tileLayer.wms(this._url, this.options);
 				}
 
 				lyr._map = map;
@@ -105,7 +114,11 @@
 				lyr._wmsVersion = parseFloat(this.wmsParams.version);
 				const projectionKey = this._wmsVersion >= 1.3 ? 'crs' : 'srs';
 				lyr.wmsParams[projectionKey] = this._crs.code;
+				if (newWMSParams) {
+					lyr.setParams(newWMSParams, true);
+				}
 			} else if (this._map) {
+				// Layer is on map - create shadow
 				lyr = L.tileLayer(this._url, this.options);
 				lyr._map = map;
 			}
