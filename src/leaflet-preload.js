@@ -12,7 +12,6 @@
 
 	/* Add preload methods to existing Leaflet classes */
 	L.TileLayer.include({
-		canPreload: true,
 
 		_preloadImg: function (map, img, url) {
 			return new Promise((resolve, reject) => {
@@ -128,13 +127,13 @@
 				},
 
 				preload: function (chunkSize = 32, sleep = 0) {
-					return this.layer.preload(this, chunkSize, sleep);
+					return this.layer._preload(this, chunkSize, sleep);
 				}
 			};
 		},
 
 
-		preload: async function (controlObject, chunkSize = 32, sleep = 0) {
+		_preload: async function (controlObject, chunkSize = 32, sleep = 0) {
 			/* Preload with parameters specified in controlObject 
 			* chunkSize: How many images to start loading simultaneously
 			* sleep: Sleep this many millis between starting new downloads
@@ -204,7 +203,7 @@
 				this.eachLayer(lyr => layers.push(lyr));
 			}
 			for (let lyr of layers) {
-				if (lyr.canPreload) {
+				if (lyr instanceof L.TileLayer) {
 					let cObj = lyr.preparePreload(bounds, this, minZoom, maxZoom);
 					controlObjects.push(cObj);
 					numTiles += cObj.numTiles;

@@ -44,15 +44,12 @@
         const map = L.map('map', { crs: L.CRS.EPSG3857 }).setView([56.0, 7.0], 3);
         var now = new Date();
         var then = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
-
-        var url = 'https://{s}.fcoo.dk/webmap/v2/data/FCOO/WW3/ww3.nsbalt_nested.nc.wms'
-            + '?cmap=Hs_m_GBP_12colors_denmark&time=' + then.toISOString();
         var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</a>'
         }).addTo(map);
         var tiles = L.tileLayer.wms(
-            url,
+            'https://{s}.fcoo.dk/webmap/v2/data/FCOO/WW3/ww3.nsbalt_nested.nc.wms',
 
             {
                 bounds: L.latLngBounds([65.79167175292969, 30.013757705688477], [48.54166793823242, -4.069439888000488]),
@@ -63,6 +60,8 @@
                 layers: 'u_v_nsbalt,u_v_dkinner',
                 format: 'image/png',
                 transparent: 'TRUE',
+                cmap: 'cmap=Hs_m_GBP_12colors_denmark',
+                time: then.toISOString(),
                 version: '1.3.0',
                 styles: 'plot_method=contourf;legend=Hs_m_GBP_12colors_denmark,plot_method=contourf;legend=Hs_m_GBP_12colors_denmark',
             }).addTo(map);
