@@ -1,30 +1,30 @@
 {
     "env": {
         "browser": true,
-        "jquery": true,
-        "es6": true
+        "jquery" : true,
+        "es6"    : true
     },
+
     "extends": "eslint:recommended",
+ 
     "globals": {
-        "$": false,
-        "L": false,
-        "window": false,
-        "document": false,
-        "undefined": false,
-        "moment": false,
-        "Raven": false
+        "$"         : false,
+        "L"         : false,
+        "window"    : false, 
+        "document"  : false,
+        "undefined" : false,
+        "moment"    : false,
+        "Raven"     : false
     },
-    "parserOptions": {
-        "ecmaVersion": 8
-    },
+
     "rules": {
-        "strict": "error",
-        "camelcase": "off",
-        "no-mixed-spaces-and-tabs": "warn",
-        "semi": "warn",
-        "no-extra-semi": "warn",
-        "no-extra-boolean-cast": "off",
+        "strict"                    : "error",
+        "camelcase"                 : "off",
+        "no-mixed-spaces-and-tabs"  : "warn",
+        "semi"                      : "warn",
+        "no-extra-semi"             : "warn",
+        "no-extra-boolean-cast"     : "off",
         "no-shadow-restricted-names": "off",
-        "no-prototype-builtins": "off"
+        "no-prototype-builtins"     : "off"
     }
 }

@@ -3,9 +3,7 @@
 
 
 ## Description
-This package is used for preloading images for TileLayers in Leaflet to improve user experience e.g. on slow connections.
-The plugin uses the internals of L.TileLayer and L.TileLayer.WMS to generate image urls that can be preloaded and cached by the browser.
-The rest of the internal layer logic, e.g. handling DOM elements, redrawing etc, is not relevant.
+This package is used for...
 
 ## Installation
 ### bower
@@ -15,47 +13,21 @@ The rest of the internal layer logic, e.g. handling DOM elements, redrawing etc,
 http://FCOO.github.io/leaflet-preload/demo/ 
 
 ## Usage
-### Can be used on a TileLayer:
-```javascript
-var layer = L.tileLayer.wms(url, options);
-var status = layer.preparePreload(map.getBounds(), map, 4, 8);
-if (status.numTiles < 10000) {
-    status.preload().then(console.log);
-    /* if needed, cancel active preload */
-    status.cancel();
-}
-```
-### On Map:
-```javascript
-// Preload all TileLayers on map (or provide an array of layers)
-map.on('preload:tilesuccess', someFunction);
-map.on('preload:tilefailed', anotherFunction);
-map.on('preload:finished', thirdFunction);
-var statusWrapper = map.preparePreload(4, 8);
-if (statusWrapper.numTiles < 10000) {
-    statusWrapper.preload().then(console.log);
-    /* if needed, cancel active preload(s) */
-    statusWrapper.cancel();
-}
-```
+```var myLeafletPreload = new LeafletPreload( options );```
 
 
-### Preload a custom subclass of e.g. L.TileLayer.WMS
-Make sure that the layer is not on map - for example by cloning a map layer first.
-```javascript
-// Set custom wmsParam, e.g. time without redraw
-layer.setParams({time: nextTime}, true);
-let status = layer.preparePreload(map.getBounds(), map, map.getZoom() - 1, map.getZoom() + 1);
-status.preload();
-```
+### options
+| Id | Type | Default | Description |
+| :--: | :--: | :-----: | --- |
+| options1 | boolean | true | If <code>true</code> the ... |
+| options2 | string | null | Contain the ... |
 
-### Events
-* preload:tilesuccess - fired when an image (a tile) is successfully loaded.
-* preload:tilefailed  - fired when an image (a tile) failed to load.
-* preload:finished - fired when preload wrapper function (via map) is done (finished or cancelled).
+### Methods
 
-### Options
-None atm
+    .methods1( arg1, arg2,...): Do something
+    .methods2( arg1, arg2,...): Do something else
+
+
 
 ## Copyright and License
 This plugin is licensed under the [MIT license](https://github.com/FCOO/leaflet-preload/LICENSE).

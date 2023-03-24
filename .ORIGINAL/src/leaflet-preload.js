@@ -1,5 +1,5 @@
 /****************************************************************************
-	leaflet-preload.js,
+	leaflet-preload.js, 
 
 	(c) 2023, FCOO
 
@@ -46,14 +46,10 @@
 		},
 
 		_getTileUrls: function (bounds, map, zoom) {
-			var urls = [],
-                tBounds = this.getTileBounds(bounds, map, zoom);
-
+			var urls = [];
+			var tBounds = this.getTileBounds(bounds, map, zoom);
 			// Emulate that we are on map
 			this._tileZoom = zoom;
-console.log('>>>>>>>>>>>>', this._map, map);
-this._map = this._map || map;
-
 			this._resetGrid();
 
 			if (!tBounds) {
@@ -84,33 +80,26 @@ this._map = this._map || map;
 			};
 		},
 
-		getNumTilesForPreload: function (bounds, map, zoomList) {
-			var _this = this,
-                numTiles = 0;
-            zoomList.forEach((z) => {
-				let tBounds = _this.getTileBounds(bounds, map, z);
+		getNumTilesForPreload: function (bounds, map, minZoom, maxZoom) {
+			var numTiles = 0;
+			for (let z = minZoom; z <= maxZoom; z++) {
+				let tBounds = this.getTileBounds(bounds, map, z);
 				if (tBounds) {
 					numTiles += (tBounds.max.x - tBounds.min.x + 1) * (tBounds.max.y - tBounds.min.y + 1);
 				}
-			});
+
+			}
 			return numTiles;
 		},
 
 		preparePreload: function (bounds, map, minZoom, maxZoom, newWMSParams = null) {
-            var zoomList = [];
-            for (let z = minZoom; z <= maxZoom; z++)
-                zoomList.push(z);
-            return this.preparePreloadZoomList(bounds, map, zoomList, newWMSParams);
-        },
-
-		preparePreloadZoomList: function (bounds, map, zoomList, newWMSParams = null) {
 			/* Return controlObject for preload method */
 			var lyr = this;
-			/*
+			/* 
 			See if layer is on map and create shadow layer if needed.
 			-
 			If you have a custom subclass which e.g. overrides getTileUrl, create a clone yourself
-			Which is NOT on map before calling this.
+			Which is NOT on map before calling this. 
 			If subclass does not override getTileUrl, this shouldn't be needed.
 			*/
 			if (this instanceof L.TileLayer.WMS) {
@@ -140,8 +129,9 @@ this._map = this._map || map;
 				layer: lyr,
 				map: map,
 				bounds: bounds,
-                zoomList: zoomList,
-				numTiles: this.getNumTilesForPreload(bounds, map, zoomList/*minZoom, maxZoom*/),
+				minZoom: minZoom,
+				maxZoom: maxZoom,
+				numTiles: this.getNumTilesForPreload(bounds, map, minZoom, maxZoom),
 				success: 0,
 				failed: 0,
 				cancel: function () {
@@ -157,21 +147,18 @@ this._map = this._map || map;
 
 
 		_preload: async function (controlObject, chunkSize = 32, sleep = 0) {
-			/* Preload with parameters specified in controlObject
+			/* Preload with parameters specified in controlObject 
 			* chunkSize: How many images to start loading simultaneously
 			* sleep: Sleep this many millis between starting new downloads
 			*/
-			var _this = this, urls = [];
+			var urls = [];
 			controlObject.status = 'running';
-            controlObject.zoomList.forEach((z) => {
-                let _urls = this._getTileUrls(controlObject.bounds, controlObject.map, z);
-
-    			urls.push(..._urls);
-
-	    		// eslint-disable-next-line no-console
-		    	console.log("Zoom ", z, " urls ", _urls.length);
-            });
-
+			for (let z = controlObject.minZoom; z <= controlObject.maxZoom; z++) {
+				let _urls = this._getTileUrls(controlObject.bounds, controlObject.map, z);
+				urls.push(..._urls);
+				// eslint-disable-next-line no-console
+				console.log("Zoom ", z, " urls ", _urls.length);
+			}
 			var start = 0, stop = chunkSize, nSuccess = 0, nFailed = 0;
 
 			while (start < urls.length && (!controlObject.cancelled)) {
@@ -215,21 +202,10 @@ this._map = this._map || map;
 
 	});
 
-    /***************************************************
-    L.Map
-    ***************************************************/
+
 	L.Map.include({
+
 		preparePreload: function (minZoom, maxZoom, bounds = null, layers = null) {
-            var zoomList = [];
-            for (let z = minZoom; z <= maxZoom; z++)
-                zoomList.push(z);
-            return this.preparePreloadZoomList(zoomList, bounds, layers);
-        },
-
-		preparePreloadZoomList: function(zoomList, bounds = null, layers = null) {
-
-console.log('ZOOMLIST', zoomList);
-
 			/* Wrapper of L.TileLayer.preparePreload */
 			var numTiles = 0, controlObjects = [];
 			if (bounds == null) {
@@ -241,7 +217,7 @@ console.log('ZOOMLIST', zoomList);
 			}
 			for (let lyr of layers) {
 				if (lyr instanceof L.TileLayer) {
-					let cObj = lyr.preparePreloadZoomList(bounds, this, zoomList);
+					let cObj = lyr.preparePreload(bounds, this, minZoom, maxZoom);
 					controlObjects.push(cObj);
 					numTiles += cObj.numTiles;
 				}
@@ -270,77 +246,8 @@ console.log('ZOOMLIST', zoomList);
 				failed += res.failed;
 			}
 			this.fire('preload:finished', { success: success, failed: failed });
-		},
-
-
-        /*****************************************
-        Automatic preload
-        *****************************************/
-        _on_moveend_preload: function(e){
-            if (!this.options.preload) return;
-
-            //Craete primary preload for zoom in and zoom out
-            var mapMinZoom = this.getMinZoom(),
-                mapZoom    = this.getZoom(),
-                mapMaxZoom = this.getMaxZoom(),
-
-                primaryMaxZoom = Math.min( mapMaxZoom, mapZoom + this.options.preloadOptions.primaryZoomIn  ),
-                maxZoom        = Math.min( mapMaxZoom, mapZoom + this.options.preloadOptions.zoomIn         ),
-                primaryMinZoom = Math.max( mapMinZoom, mapZoom - this.options.preloadOptions.primaryZoomOut ),
-                minZoom        = Math.max( mapMinZoom, mapZoom - this.options.preloadOptions.zoomOut        ),
-
-                zoomList = [],
-                z;
-
-            //Add prioritized zoom-levels
-            //1. Primary zoom in
-            for (z = mapZoom+1; z <= primaryMaxZoom; z++)
-                zoomList.push(z);
-
-            //2. Primary zoom out
-            for (z = mapZoom-1; z >= primaryMinZoom; z--)
-                zoomList.push(z);
-
-            //3. Rest of zoom in
-            for (z = primaryMaxZoom+1; z <= maxZoom; z++)
-                zoomList.push(z);
-
-            //4. Rest of zoom out
-            for (z = primaryMinZoom-1; z >= minZoom; z--)
-                zoomList.push(z);
-
-//            console.log('Preload', this.getZoom(), this.getMinZoom(), this.getMaxZoom(), 'primaryMinZoom', primaryMinZoom, 'primaryMaxZoom', primaryMaxZoom, 'minZoom', minZoom, 'maxZoom', maxZoom  );
-//            console.log('zoomList', zoomList);
-
-            if (this.preloadStatus)
-                this.preloadStatus.cancel();
-
-            this.preloadStatus = this.preparePreloadZoomList(zoomList);
-console.log(zoomList);
-            this.preloadStatus.preload();
-
-        }
+		}
 	});
-
-
-    L.Map.mergeOptions({
-        preload       : false,
-        preloadOptions: {
-            zoomOut       : 1,
-            zoomIn        : 3,
-
-            primaryZoomOut: 0,
-            primaryZoomIn : 1
-        }
-    });
-
-    L.Map.addInitHook(function () {
-        if (this.options.preload){
-// HER>             this.on('resize zoomend', this._onPreload);
-            this.on('moveend zoomend zoomlevelschange',        this._on_moveend_preload);
-// HER>             this.on('dragend',        this._onPreload);
-        }
-    });
 
 
 

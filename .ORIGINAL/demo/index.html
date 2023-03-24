@@ -1,19 +1,29 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="da" style="font-size: 100%">
-<head>
-	<title>fcoo.dk - leaflet-preload - Demo</title>
-	<meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta http-equiv='x-dns-prefetch-control' content='on'>
 
-	<meta name='copyright' content='FCOO'>
-	<meta name='owner' content='FCOO'>
-    <link  href="bower_components.css" rel="stylesheet">
+<head>
+    <title>fcoo.dk - leaflet-preload - Demo</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta http-equiv='x-dns-prefetch-control' content='on'>
+
+    <meta name='copyright' content='FCOO'>
+    <meta name='owner' content='FCOO'>
+
+    <!-- <link href="bower_components.css" rel="stylesheet"> -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+        integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw-src.css"
         integrity="sha512-vJfMKRRm4c4UupyPwGUZI8U651mSzbmmPgR3sdE3LcwBPsdGeARvUM5EcSTg34DK8YIRiIo+oJwNfZPMKEQyug=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="bower_components.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+        integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"
+        integrity="sha512-ozq8xQKq6urvuU6jNgkfqAmT7jKN2XumbrX1JiB3TnF7tI48DPI4Gy1GXKD/V3EExgAs1V+pRO7vwtS1LHg0Gw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-
+    <script src="../src/leaflet-preload.js"></script>
 
 </head>
 
@@ -30,26 +40,11 @@
     <button id="cancelbtn" onclick="cancelPreload()">CANCEL</button>
     <button onclick="forwards()">+HOUR</button>
     <button onclick="backwards()">-HOUR</button>
-
-    <button onclick="setMapPreload(true)">Preload ON</button>
-    <button onclick="setMapPreload(false)">Preload OFF</button>
     </p>
     <div id="map" style="width: 1200px; height: 1000px;"></div>
 
-    <script src="bower_components.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"
-        integrity="sha512-ozq8xQKq6urvuU6jNgkfqAmT7jKN2XumbrX1JiB3TnF7tI48DPI4Gy1GXKD/V3EExgAs1V+pRO7vwtS1LHg0Gw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer">
-    </script>
-    
-	<script src="../src/leaflet-preload.js"></script>
-
     <script>
-        const map = L.map('map', { 
-            crs: L.CRS.EPSG3857,
-preload: true
-        }).setView([56.0, 7.0], 3);
+        const map = L.map('map', { crs: L.CRS.EPSG3857 }).setView([56.0, 7.0], 3);
         var now = new Date();
         var then = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
         var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -170,7 +165,7 @@ preload: true
             numTiles = preloadStatus.numTiles;
 
             updateProgress();
-            if (numTiles > 5000) {
+            if (numTiles > 500) {
                 alert("Too many tiles: " + numTiles);
                 return;
             }
@@ -193,7 +188,7 @@ preload: true
             numTiles = preloadStatus.numTiles;
 
             updateProgress();
-            if (numTiles > 5000) {
+            if (numTiles > 500) {
                 alert("Too many tiles: " + numTiles);
                 return;
             }
@@ -201,12 +196,9 @@ preload: true
             preloadStatus.preload(8, 30);
 
         }
-        
-        function setMapPreload(on){
-            map.options.preload = on;
-        }            
-        
         setZoomTimeStatus();
-	</script>
+    </script>
+
 </body>
+
 </html>
