@@ -227,9 +227,6 @@ this._map = this._map || map;
         },
 
 		preparePreloadZoomList: function(zoomList, bounds = null, layers = null) {
-
-console.log('ZOOMLIST', zoomList);
-
 			/* Wrapper of L.TileLayer.preparePreload */
 			var numTiles = 0, controlObjects = [];
 			if (bounds == null) {
@@ -309,14 +306,14 @@ console.log('ZOOMLIST', zoomList);
             for (z = primaryMinZoom-1; z >= minZoom; z--)
                 zoomList.push(z);
 
-//            console.log('Preload', this.getZoom(), this.getMinZoom(), this.getMaxZoom(), 'primaryMinZoom', primaryMinZoom, 'primaryMaxZoom', primaryMaxZoom, 'minZoom', minZoom, 'maxZoom', maxZoom  );
-//            console.log('zoomList', zoomList);
+//console.log('Preload', this.getZoom(), this.getMinZoom(), this.getMaxZoom(), 'primaryMinZoom', primaryMinZoom, 'primaryMaxZoom', primaryMaxZoom, 'minZoom', minZoom, 'maxZoom', maxZoom  );
+//console.log('zoomList', zoomList);
 
             if (this.preloadStatus)
                 this.preloadStatus.cancel();
 
             this.preloadStatus = this.preparePreloadZoomList(zoomList);
-console.log(zoomList);
+//console.log(zoomList);
             this.preloadStatus.preload();
 
         }
@@ -336,13 +333,9 @@ console.log(zoomList);
 
     L.Map.addInitHook(function () {
         if (this.options.preload){
-// HER>             this.on('resize zoomend', this._onPreload);
-            this.on('moveend zoomend zoomlevelschange',        this._on_moveend_preload);
-// HER>             this.on('dragend',        this._onPreload);
+            this.on('moveend zoomlevelschange', this._on_moveend_preload);
         }
     });
-
-
 
 }(jQuery, L/*,this, document*/));
 
