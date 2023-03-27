@@ -1,6 +1,6 @@
 {
   "name": "leaflet-preload",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "homepage": "https://github.com/FCOO/leaflet-preload",
   "author": "Simon Lyngby Kokkendorff slk@fcoo.dk",
   "description": "package.json is only use for building the package. see bower.json for more info",
