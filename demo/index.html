@@ -43,6 +43,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer">
     </script>
     
+	<!-- <script src="../src/leaflet-preload-request.js"></script> -->
 	<script src="../src/leaflet-preload.js"></script>
 
     <script>
@@ -65,7 +66,7 @@
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</a>'
         }).addTo(map);
 
-        var wmsLayer = L.tileLayer.wms('http://ows.mundialis.de/services/service?', {
+        var wmsLayer = L.tileLayer.wms('https://ows.mundialis.de/services/service?', {
                 layers: 'SRTM30-Colored-Hillshade,TOPO-OSM-WMS',
                 minZoom: 5,
                 maxZoom: 15,
