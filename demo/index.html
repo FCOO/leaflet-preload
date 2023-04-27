@@ -34,7 +34,7 @@
     <button onclick="setMapPreload(true)">Preload ON</button>
     <button onclick="setMapPreload(false)">Preload OFF</button>
     </p>
-    <div id="map" style="width: 1200px; height: 1000px;"></div>
+    <div id="map" style="width: 1000px; height: 800px;"></div>
 
     <script src="bower_components.js"></script>
     
@@ -46,20 +46,35 @@
 	<script src="../src/leaflet-preload.js"></script>
 
     <script>
+        L.preloadDEBUG = true;
         const map = L.map('map', { 
             crs: L.CRS.EPSG3857,
-preload: true
-        }).setView([56.0, 7.0], 3);
-        var now = new Date();
-        var then = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
-        var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            preload: true,
+            preloadOptions: {
+                fullBounds: [1]
+            },
+            minZoom: 3, 
             maxZoom: 18,
+        }).setView([56.0, 7.0], 3);
+        
+        var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            minZoom: 3,
+            maxZoom: 18,
+            preloadMainLayer: true,            
+
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</a>'
         }).addTo(map);
-        var tiles = L.tileLayer.wms(
-            'https://{s}.fcoo.dk/webmap/v2/data/FCOO/WW3/ww3.nsbalt_nested.nc.wms',
 
-            {
+        var wmsLayer = L.tileLayer.wms('http://ows.mundialis.de/services/service?', {
+                layers: 'SRTM30-Colored-Hillshade,TOPO-OSM-WMS',
+                minZoom: 5,
+                maxZoom: 15,
+            }).addTo(map);            
+
+        var now = new Date();
+        var then = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
+        var tiles = L.tileLayer.wms(
+            'https://{s}.fcoo.dk/webmap/v2/data/FCOO/WW3/ww3.nsbalt_nested.nc.wms', {
                 bounds: L.latLngBounds([65.79167175292969, 30.013757705688477], [48.54166793823242, -4.069439888000488]),
                 maxZoom: 16,
                 subdomains: ['wms01', 'wms02', 'wms03'],
@@ -73,10 +88,12 @@ preload: true
                 version: '1.3.0',
                 styles: 'plot_method=contourf;legend=Hs_m_GBP_12colors_denmark,plot_method=contourf;legend=Hs_m_GBP_12colors_denmark',
             }).addTo(map);
+            
+            
 
-        map.on('preload:finished', event => console.log("Preload finished, success: " + event.success + " errors: " + event.failed));
-        map.on('preload:tilesuccess', imgPreloadHandler);
-        map.on('preload:tiledfailed', imgPreloadHandler);
+//        map.on('preload:finished', event => console.log("Preload finished, success: " + event.success + " errors: " + event.failed));
+//        map.on('preload:tilesuccess', imgPreloadHandler);
+//        map.on('preload:tiledfailed', imgPreloadHandler);
         map.on('zoomend', setZoomTimeStatus);
 
         function setZoomTimeStatus(event) {
@@ -88,6 +105,7 @@ preload: true
             setZoomTimeStatus();
             tiles.setParams({ time: then.toISOString() });
 
+            map.fire('preload:timechanged');
         }
 
         function backwards() {
@@ -95,6 +113,7 @@ preload: true
             setZoomTimeStatus();
             tiles.setParams({ time: then.toISOString() });
 
+            map.fire('preload:timechanged');
         }
 
         var drawnItems = new L.FeatureGroup();
@@ -166,8 +185,8 @@ preload: true
             var latLngs = drawnItems.getLayers()[0].getLatLngs();
             let selectedRectangele = L.latLngBounds(latLngs[0], latLngs[2]);
             finished = 0
-            preloadStatus = map.preparePreload(minzoom, maxzoom, selectedRectangele);
-            numTiles = preloadStatus.numTiles;
+// HER>             preloadStatus = map.preparePreload_OLD(minzoom, maxzoom, selectedRectangele);
+// HER>             numTiles = preloadStatus.numTiles;
 
             updateProgress();
             if (numTiles > 5000) {
@@ -189,7 +208,8 @@ preload: true
             nextTime.setHours(nextTime.getHours() + 1);
             finished = 0
 
-            preloadStatus = tiles.preparePreload(selectedRectangele, map, minzoom, maxzoom, { time: nextTime.toISOString() });
+// HER>             preloadStatus = map.preparePreload_OLD(selectedRectangele, map, minzoom, maxzoom, nextTime.toISOString() );
+
             numTiles = preloadStatus.numTiles;
 
             updateProgress();
