@@ -323,13 +323,6 @@
     ****************************************************
     ***************************************************/
     L.Map.include({
-// HER>         preparePreload_OLD: function (minZoom, maxZoom, bounds = null, layers = null) {
-// HER>             var zoomList = [];
-// HER>             for (let z = minZoom; z <= maxZoom; z++)
-// HER>                 zoomList.push(z);
-// HER>             return this.preparePreloadZoomList(zoomList, bounds, layers);
-// HER>         },
-
         _preload_preloadObject: function(ztList, bounds, layers) {
             var numTiles       = 0,
                 controlObjects = [];
@@ -464,11 +457,9 @@
 
 
         /*****************************************
-        _preload_start
+        _preload_update_list
         *****************************************/
-        _preload_start: function(){
-            if (!this.options.preload) return;
-
+        _preload_update_list: function(){
             //Update preload-options in _preload_list with current to- and from zoom and time
             var mapMinZoom = this.getMinZoom(),
                 mapZoom    = this.getZoom(),
@@ -535,7 +526,7 @@
                                     ztList.push({
                                         zoom         : z,
                                         time         : t,
-                                        reducedBounds: fullBounds.length ? !fullBounds.includes(z - mapZoom) : true,
+                                        reducedBounds: typeof fullBounds == 'boolean' ? fullBounds : fullBounds.length ? !fullBounds.includes(z - mapZoom) : true,
                                         weight       : Math.sqrt( Math.pow( (z - mapZoom)*zWeight, 2) + Math.pow(t*tWeight, 2) ),
                                     });
                                     zts[ztId] = true;
@@ -559,17 +550,26 @@
                     }
                 });
             }); //end of this._preload_list.forEach(...
+        },
+
+        /*****************************************
+        _preload_start
+        *****************************************/
+        _preload_start: function(){
+            if (!this.options.preload) return;
+
+            this._preload_update_list();
 
             this._preload_start_preloadOptions(0);
         },
 
-        _preload_start_preloadOptions: function(index){
+        _preload_start_preloadOptions: function(index, bounds, layers, doNotStart){
             var preloadOptions = this._preload_list[index];
 
             if (preloadOptions.preloadObject)
                 preloadOptions.preloadObject.cancel();
 
-            var preloadObject = preloadOptions.preloadObject = this._preload_preloadObject(preloadOptions.ztList);
+            var preloadObject = preloadOptions.preloadObject = this._preload_preloadObject(preloadOptions.ztList, bounds, layers);
 
             //Set ref to preloadOptions
             preloadObject.preloadOptions = preloadOptions;
@@ -589,23 +589,24 @@
                 expected : preloadObject.numTiles * (status.msProImg || 0)
             });
 
-            var expectedDuration = status.expected;
-
-            _debug(
-                'Preload #'+index+': START loading '+status.total+ ' images.',
-                expectedDuration ? 'Expected duration ='+Math.round(expectedDuration) : ''
-            );
-
-
-            if (
-                (expectedDuration < this.options.preloadOptions.maxDuration) ||
-                (Date.now() > ((status.end || 0) + this.options.preloadOptions.wait))
-            )
-                preloadObject.preload(this.options.preloadOptions);
-            else
+            if (!doNotStart){
+                var expectedDuration = status.expected;
                 _debug(
-                    'Preload #'+index+': STOPPED '+status.total+ ' images.',
-                    'Expected duration='+Math.round(expectedDuration)+'>'+this.options.preloadOptions.maxDuration);
+                    'Preload #'+index+': START loading '+status.total+ ' images.',
+                    expectedDuration ? 'Expected duration ='+Math.round(expectedDuration) : ''
+                );
+
+                if (
+                    (expectedDuration < this.options.preloadOptions.maxDuration) ||
+                    (Date.now() > ((status.end || 0) + this.options.preloadOptions.wait))
+                )
+                    preloadObject.preload(this.options.preloadOptions);
+                else
+                    _debug(
+                        'Preload #'+index+': STOPPED '+status.total+ ' images.',
+                        'Expected duration='+Math.round(expectedDuration)+'>'+this.options.preloadOptions.maxDuration);
+            }
+            return preloadOptions;
         },
 
 

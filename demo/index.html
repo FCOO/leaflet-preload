@@ -25,14 +25,19 @@
     <input type="number" id="minzoom" name="minzoom" min="1" max="5" value="2">
     <label for="maxzoom">Max zoom for preload</label>
     <input type="number" id="maxzoom" name="maxzoom" min="3" max="10" value="5">
+<!-- 
     <button id="preloadbtn" onclick="preload()" disabled>PRELOAD</button>
     <button id="preloadbtnNext" onclick="preloadNextHour()" disabled>PRELOAD +1 HOUR</button>
     <button id="cancelbtn" onclick="cancelPreload()">CANCEL</button>
+ -->    
     <button onclick="forwards()">+HOUR</button>
     <button onclick="backwards()">-HOUR</button>
 
     <button onclick="setMapPreload(true)">Preload ON</button>
     <button onclick="setMapPreload(false)">Preload OFF</button>
+
+    <button id="preloadFullBtn"     onclick="fullPreload()"     disabled>Full preload</button>
+    <button id="preloadFullStopBtn" onclick="stopFullPreload()" disabled>STOP</button>
     </p>
     <div id="map" style="width: 1000px; height: 800px;"></div>
 
@@ -43,24 +48,25 @@
         crossorigin="anonymous" referrerpolicy="no-referrer">
     </script>
     
-	<!-- <script src="../src/leaflet-preload-request.js"></script> -->
+	<script src="../src/leaflet-preload-request.js"></script>
 	<script src="../src/leaflet-preload.js"></script>
 
     <script>
-        L.preloadDEBUG = true;
+//        L.preloadDEBUG = true;
         const map = L.map('map', { 
             crs: L.CRS.EPSG3857,
-            preload: true,
+preload: false,
+//            preload: true,
             preloadOptions: {
                 fullBounds: [1]
             },
             minZoom: 3, 
-            maxZoom: 18,
+            maxZoom: 12,
         }).setView([56.0, 7.0], 3);
         
         var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             minZoom: 3,
-            maxZoom: 18,
+            maxZoom: 12,
             preloadMainLayer: true,            
 
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</a>'
@@ -69,7 +75,7 @@
         var wmsLayer = L.tileLayer.wms('https://ows.mundialis.de/services/service?', {
                 layers: 'SRTM30-Colored-Hillshade,TOPO-OSM-WMS',
                 minZoom: 5,
-                maxZoom: 15,
+                maxZoom: 12,
             }).addTo(map);            
 
         var now = new Date();
@@ -145,19 +151,27 @@
         map.on(L.Draw.Event.CREATED, function (e) {
             var type = e.layerType,
                 layer = e.layer;
-            document.getElementById("preloadbtn").disabled = false;
-            document.getElementById("preloadbtnNext").disabled = false;
+            //document.getElementById("preloadbtn").disabled = false;
+            //document.getElementById("preloadbtnNext").disabled = false;
+            document.getElementById("preloadFullBtn").disabled = false;
+            
+
+           
             drawnItems.addLayer(e.layer);
             drawControlFull.remove(map);
             drawControlEditOnly.addTo(map)
+
+        
         });
 
         map.on(L.Draw.Event.DELETED, function (e) {
             if (drawnItems.getLayers().length === 0) {
                 drawControlEditOnly.remove(map);
                 drawControlFull.addTo(map);
-                document.getElementById("preloadbtn").disabled = true;
-                document.getElementById("preloadbtnNext").disabled = true;
+                //document.getElementById("preloadbtn").disabled = true;
+                //document.getElementById("preloadbtnNext").disabled = true;
+                document.getElementById("preloadFullBtn").disabled = true;
+                document.getElementById("preloadFullStopBtn").disabled = true;
             };
         });
 
@@ -228,6 +242,54 @@
         }            
         
         setZoomTimeStatus();
-	</script>
+
+        var p = null;
+        function stopFullPreload(){
+            if (p)
+                p.stop();            
+        }
+            
+        function fullPreload(){
+            p = new L.Preload({
+//                width: 500, height: 500,
+                bounds: drawControlFull.options.edit.featureGroup.getBounds(),
+                layers: [osm, wmsLayer, tiles],
+                maxZoom: map.options.maxZoom,
+                maxZooms: 8,
+                onStart: function(p){
+                    console.log('Start',p);  
+                    document.getElementById("preloadFullBtn").disabled = true;
+                    document.getElementById("preloadFullStopBtn").disabled = false;
+
+                    
+                },
+                onUpdate: function(status){
+                    console.log('Update', 
+                        status.percentText, status.text, 
+                        status.durationText + ' / ' + status.expectedDurationText,
+                        ' expected left ='+status.expectedDurationLeftText
+                    );
+                },
+
+                //onCancelled: function(){
+                //    document.getElementById("preloadFullStopBtn").disabled = true;
+                //},
+                onFinished: function(status){
+                    console.log('Finish', status);
+                    document.getElementById("preloadFullBtn").disabled = false;
+                    document.getElementById("preloadFullStopBtn").disabled = true;
+                }                    
+                
+            });
+            var text = 'Will preload '+ p.options.tiles + ' tiles. Continue?';
+            
+            if (confirm(text))
+                p.start();
+            
+            
+        }            
+    
+    
+    </script>
 </body>
 </html>
