@@ -680,7 +680,7 @@
                 zoomOut     : 0,
                 timeForward : 1,
                 timeBackward: 0
-            },{
+            }/*,{
                 zoomIn      : 1,
                 zoomOut     : 0,
                 timeForward : 1,
@@ -690,7 +690,7 @@
                 zoomOut     : 0,
                 timeForward : 1,
                 timeBackward: 0
-            }]
+            }*/]
         }
     });
 

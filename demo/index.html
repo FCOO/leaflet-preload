@@ -52,13 +52,17 @@
 	<script src="../src/leaflet-preload.js"></script>
 
     <script>
-//        L.preloadDEBUG = true;
+        L.preloadDEBUG = true;
         const map = L.map('map', { 
             crs: L.CRS.EPSG3857,
-preload: false,
-//            preload: true,
+//preload: false,
+            preload: true,
             preloadOptions: {
-                fullBounds: [1]
+                fullBounds: [1],
+                list: [
+                    {zoomIn: 1, zoomOut: 0, timeForward: 1, timeBackward: 0},
+                    {zoomIn: 2, zoomOut: 0, timeForward: 1, timeBackward: 0}
+                ]                        
             },
             minZoom: 3, 
             maxZoom: 12,
@@ -71,6 +75,9 @@ preload: false,
 
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors</a>'
         }).addTo(map);
+
+console.log(map.options.preloadOptions);
+
 
         var wmsLayer = L.tileLayer.wms('https://ows.mundialis.de/services/service?', {
                 layers: 'SRTM30-Colored-Hillshade,TOPO-OSM-WMS',
